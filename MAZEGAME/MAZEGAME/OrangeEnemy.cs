@@ -1,35 +1,86 @@
-using Microsoft.Xna.Framework;
 using System;
+using Microsoft.Xna.Framework;
 
 namespace MAZEGAME
 {
     public class OrangeEnemy : Enemy
     {
-        public OrangeEnemy(int x, int y, Direction direction, Rectangle sprite) : base(x,y,direction, sprite){
+        public OrangeEnemy() : base(){
         }
 
-        public override void updateEnemy(Tile[,] tileArray) {
-            Vector2 toBePosition = calculateBasedOnDirection(currentDirection, positionX, positionY);
-            if (isTileMoveable((int) toBePosition.X, (int) toBePosition.Y, tileArray)) {
-                positionX = (int) toBePosition.X;
-                positionY = (int) toBePosition.Y;
+        public override void setInitalState()
+        {
+            // positionX = 15;
+            // positionY = 14;
+
+            positionX = 15;
+            positionY = 17;
+            currentDirection = Direction.Right;
+            currentGhost = new Rectangle(1371, 339, 42, 42);
+            currentMode = EnemyMode.Scatter;
+        }
+
+        public override (int, int) getScatterTargetPosition(Tile[,] tileArray) {
+            Random rng = new Random();
+            int x, y;
+            do {
+                x = rng.Next(13); 
+                y = rng.Next(20, 30); 
+            } while (!isTileMoveable(x, y, tileArray) || (x == positionX && y == positionY));
+            return (x, y);
+        }
+
+        public override (int, int) getChaseTargetPosition((int, int) pacmanPosition, Direction pacmanDirection, Tile[,] tileArray, (int, int) redEnemyPosition) {
+            int distance = manhattanDistance(pacmanPosition, (positionX, positionY));
+
+            if (distance > 6) {
+                int targetX = pacmanPosition.Item1;
+                int targetY = pacmanPosition.Item2;
+
+                if (pacmanDirection == Direction.Down)
+                {
+                    if (targetY + 2 < 31) {
+                        targetY += 2;
+                    }
+                }
+                else if (pacmanDirection == Direction.Up)
+                {
+                    if (targetY - 2 >= 0) {
+                        targetY -= 2;
+                    }
+                }
+                else if (pacmanDirection == Direction.Right)
+                {
+                    if (targetX + 2 < 28 || targetY == 14) {
+                        targetX += 2;
+                    }
+                    if (targetY == 14 && targetX > 27)
+                    {
+                        targetX = 0;
+                    }
+                }
+                else if (pacmanDirection == Direction.Left)
+                {
+                    if (targetX - 2 >= 0 || targetY == 14) {
+                        targetX -= 2;
+                    }
+                    targetX -= 2;
+                    if (targetY == 14 && targetX < 0)
+                    {
+                        targetX = 27;
+                    }
+                }
+
+                if (isTileMoveable(targetX, targetY, tileArray)) {
+                    return (targetX, targetY);
+                }
+                return (pacmanPosition.Item1, pacmanPosition.Item2);
             } else {
-                Random random = new Random();
-                Direction randomDirection;
-
-                do {
-                    Array values = Enum.GetValues(typeof(Direction));
-                    randomDirection = (Direction)values.GetValue(random.Next(values.Length));
-                    toBePosition = calculateBasedOnDirection(randomDirection, positionX, positionY);
-                } while (!isTileMoveable((int) toBePosition.X, (int) toBePosition.Y, tileArray));
-                currentDirection = randomDirection;
-                positionX = (int) toBePosition.X;
-                positionY = (int) toBePosition.Y;
+                return getScatterTargetPosition(tileArray);
             }
-            updateDirection();
         }
 
-        private void updateDirection() {
+        public override void updateDirection() {
             if (currentDirection == Direction.Down)
             {
                 currentGhost = new Rectangle(1707, 339, 42, 42);

@@ -58,6 +58,10 @@ namespace MAZEGAME
             return positionY;
         }
 
+        public Direction getCurrentDirection() {
+            return currentDirection;
+        }
+
         public void updatePlayer(Tile[,] tileArray) {
             Vector2 toBePosition = calculateBasedOnDirection(nextDirection, positionX, positionY);
             if (isTileMoveable((int) toBePosition.X, (int) toBePosition.Y, tileArray)) {
@@ -115,9 +119,12 @@ namespace MAZEGAME
             return currentPacMan;
         }
 
-        public bool decreaseLife() {
+        public int getLivesLeft() {
+            return noOfLivesLeft;
+        }
+
+        public void decreaseLife() {
             noOfLivesLeft -=1;
-            return noOfLivesLeft == 0;
         }
     }
 }
