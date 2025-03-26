@@ -1,9 +1,8 @@
 using Microsoft.Xna.Framework;
-using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input;
 
 namespace MAZEGAME
 {
+    // Represents a section of the map - a tile can be of certain types and have a position
     public class Tile
     {
         public enum TileType { None, Wall, Ghost, GhostHouse, Player, Pellet, PowerPellet};

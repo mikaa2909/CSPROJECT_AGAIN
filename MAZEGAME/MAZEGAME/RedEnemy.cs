@@ -17,9 +17,11 @@ namespace MAZEGAME
             currentMode = EnemyMode.Scatter;
         }
 
+        // Set the target position to be a random position in the top left of the maze
         public override (int, int) getScatterTargetPosition(Tile[,] tileArray) {
             Random rng = new Random();
             int x, y;
+            // Keep generating a random position in the top left until the position is a valid one
             do {
                 x = rng.Next(13); 
                 y = rng.Next(9); 
@@ -27,10 +29,12 @@ namespace MAZEGAME
             return (x, y);
         }
 
+        // Set the target position of the red enemy when in chase mode - towards the tile two in front of the player
         public override (int, int) getChaseTargetPosition((int, int) pacmanPosition, Direction pacmanDirection, Tile[,] tileArray, (int, int) redEnemyPosition) {
             int targetX = pacmanPosition.Item1;
             int targetY = pacmanPosition.Item2;
 
+            // Calculate the position 2 tiles in front of the player depending on the direction
             if (pacmanDirection == Direction.Down)
             {
                 if (targetY + 2 < 31) {
@@ -65,13 +69,16 @@ namespace MAZEGAME
                 }
             }
 
+            // If this tile is a valid one then this is the target for the red enemy
             if (isTileMoveable(targetX, targetY, tileArray)) {
                 return (targetX, targetY);
             }
 
+            // If not, the target is the position of the player
             return (pacmanPosition.Item1, pacmanPosition.Item2);
         }
 
+        // Return the red sprite facing in the current direction
         public override void updateDirection() {
             if (currentDirection == Direction.Down)
             {

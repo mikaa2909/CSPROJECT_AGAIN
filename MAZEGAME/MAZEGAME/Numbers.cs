@@ -3,6 +3,7 @@ namespace MAZEGAME
 {
    public static class Numbers
     {
+        // Returns the number sprites according to the sprite sheet
         public static Rectangle getRectangle(char number) {
             switch (number) {
                 case '0': return new Rectangle(3, 48, 21, 21); 

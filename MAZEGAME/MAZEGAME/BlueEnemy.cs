@@ -21,30 +21,24 @@ namespace MAZEGAME
             currentMode = EnemyMode.Scatter;
         }
 
-        private (int, int) getTargetPosition((int, int) pacmanPosition, Direction pacmanDirection, Tile[,] tileArray, (int, int) redEnemyPosition) {
-            if (currentMode == EnemyMode.Chase) {
-                return getChaseTargetPosition(pacmanPosition, pacmanDirection, tileArray, redEnemyPosition);
-            } else if (currentMode == EnemyMode.Scatter) {
-                return getScatterTargetPosition(tileArray);
-            } else {
-                return (0, 0);
-            }
-        }
-
+        // Set the target position to be a random position in the bottom right of the maze
         public override (int, int) getScatterTargetPosition(Tile[,] tileArray) {
             Random rng = new Random();
             int x, y;
             do {
+                // Keep generating a random position in the bottom right until the position is a valid one
                 x = rng.Next(15, 27); 
                 y = rng.Next(20, 30); 
             } while (!isTileMoveable(x, y, tileArray) || (x == positionX && y == positionY));
             return (x, y);
         }
 
+        // Set the target position of the blue enemy when in chase mode - towards the player but according to the red enemies position
         public override (int, int) getChaseTargetPosition((int, int) pacmanPosition, Direction pacmanDirection, Tile[,] tileArray, (int, int) redEnemyPosition) {
             int targetX = pacmanPosition.Item1;
             int targetY = pacmanPosition.Item2;
 
+            // Calculate two in front of the players position
             if (pacmanDirection == Direction.Down)
             {
                 if (targetY + 2 < 31) {
@@ -79,15 +73,19 @@ namespace MAZEGAME
                 }
             }
 
+            // Work out the vector between this tile and the red enemies position
             int vectorX = redEnemyPosition.Item1 - targetX;
             int vectorY = redEnemyPosition.Item2 - targetY;
 
+            // Double this vector
             vectorX *= 2;
             vectorY *= 2;
 
+            // The tile the vector lands on is the blue enemy's target tile.
             targetX += vectorX;
             targetY += vectorY;
 
+            // If this target is valid then return this else return the players direct position
             if (targetX >= 0 && targetX < 28 && targetY >= 0 && targetY < 31 && isTileMoveable(targetX, targetY, tileArray)  ) {
                 return (targetX, targetY);
             }
@@ -95,6 +93,7 @@ namespace MAZEGAME
             return (pacmanPosition.Item1, pacmanPosition.Item2);
         }
 
+        // Return the blue sprite facing in the current direction
         public override void updateDirection() {
             if (currentDirection == Direction.Down)
             {
