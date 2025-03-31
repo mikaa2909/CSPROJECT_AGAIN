@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 
 namespace MAZEGAME
@@ -8,7 +9,7 @@ namespace MAZEGAME
     {
 
         // Different modes the ghosts can be in
-        public enum EnemyMode{Chase, Scatter, Frightened}
+        public enum EnemyMode{Chase, Scatter, Frightened, InsideHouse, LeavingHouse, ReturningBack}
 
         public int positionX;
         public int positionY;
@@ -16,8 +17,11 @@ namespace MAZEGAME
         public Rectangle currentGhost;
         public EnemyMode currentMode;
         public EnemyMode previousModeBeforeFrightened;
+        public EnemyMode modeAfterLeavingHouse;
         public Rectangle frightenedEnemy;
         public bool isInGhostHouse;
+        public (int, int)[] leavingPath;
+        public int leavingIndex;
 
         public Enemy() {
             setInitalState();
@@ -32,12 +36,23 @@ namespace MAZEGAME
             (int, int) toBePosition;
 
             // Get the position to move the enemy to, based on the current mode the enemy is in 
-            if (currentMode == EnemyMode.Chase) {
+            if (currentMode == EnemyMode.InsideHouse){
+                return;
+            } else if (currentMode == EnemyMode.LeavingHouse) {
+                toBePosition = getLeavingPosition();
+            } else if (currentMode == EnemyMode.Chase) {
                 targetPosition = getChaseTargetPosition(pacmanPosition, pacmanDirection, tileArray, redEnemyPosition);
                 toBePosition = findPath((positionX, positionY), targetPosition, tileArray, currentDirection);
             } else if (currentMode == EnemyMode.Scatter){
                 targetPosition = getScatterTargetPosition(tileArray);
                 toBePosition = findPath((positionX, positionY), targetPosition, tileArray, currentDirection);
+            } else if (currentMode == EnemyMode.ReturningBack) {
+                // If the ghost has been caught, it is sent to the beginning position
+                if (positionX == 13 && positionY == 11) {
+                    setInitalState();
+                    return;
+                }
+                toBePosition = findPath((positionX, positionY), (13, 11), tileArray, currentDirection);
             } else {
                 toBePosition = getFrightenedPosition(tileArray);
             }
@@ -51,9 +66,19 @@ namespace MAZEGAME
 
             // Change the sprite according to the direction the enemy is facing
             // Doesn't apply to the frightened sprite, because that is the same sprite for all directions (dark blue ghost)
-            if (currentMode != EnemyMode.Frightened) {
+            if (currentMode != EnemyMode.Frightened && currentMode != EnemyMode.ReturningBack
+             && !(currentMode == EnemyMode.LeavingHouse && modeAfterLeavingHouse == EnemyMode.Frightened)) {
                 updateDirection();
             }
+        }
+
+
+        public void setX(int newX) {
+            positionX = newX;
+        }
+
+        public void setY(int newY) {
+            positionY = newY;
         }
 
         // Return x position of ghost in the tile array
@@ -78,38 +103,61 @@ namespace MAZEGAME
 
         // Update the enemy to the frightened mode
         public void frighten() {
-            // Store the mode the enemy is in before being frightened
+            currentGhost = frightenedEnemy;
+            if (currentMode == EnemyMode.InsideHouse || currentMode == EnemyMode.LeavingHouse) {
+                return;
+            }
+             // Store the mode the enemy is in before being frightened
             if (currentMode != EnemyMode.Frightened) {
                 previousModeBeforeFrightened = currentMode;
             }
             // Change the mode and the sprite to the frightened enemy sprite (dark blue ghost)
             currentMode = EnemyMode.Frightened;
-            currentGhost = frightenedEnemy;
 
             // Move the ghost in the opposite direction (away from the player)
             currentDirection = getOppositeDirection(currentDirection);
         }
 
+        // Puts the enemy in a state to leave the house
+        public void leaveHouse(EnemyMode mode) {
+            if (currentMode == EnemyMode.InsideHouse) {
+                currentMode = EnemyMode.LeavingHouse;
+                modeAfterLeavingHouse = mode;
+            } 
+        }
+
         // Change the sprite (if in frightened mode) to the white ghost
         public void setWhiteGhost() {
-            if (currentMode == EnemyMode.Frightened) {
+            if (currentMode == EnemyMode.Frightened || currentMode == EnemyMode.InsideHouse) {
                 currentGhost = new Rectangle(1851, 195, 42, 42);
             }
         }
 
         // Return to the previous mode before being frightened
         public void endFrightenedMode() {
-            currentMode = previousModeBeforeFrightened;
+            if (currentMode == EnemyMode.Frightened) {
+                currentMode = previousModeBeforeFrightened;
+            } else if (currentMode == EnemyMode.InsideHouse) {
+                updateDirection();
+            }
         }
 
-        // Change modes betwwen Chase and Scatter and return the new one
-        public EnemyMode changeMode() {
-            if (currentMode == EnemyMode.Chase) {
-                currentMode = EnemyMode.Scatter;
-            } else {
-                currentMode = EnemyMode.Chase;
+        // Change modes to the given mode
+        public void changeMode(EnemyMode modeToChangeTo) {
+            if (currentMode != EnemyMode.InsideHouse && currentMode != EnemyMode.LeavingHouse) {
+                currentMode = modeToChangeTo;
             }
-            return currentMode;
+        }
+
+        // Moves the ghost along the path to leave the house.
+        public (int, int) getLeavingPosition() {
+            leavingIndex++;
+            if (leavingIndex == leavingPath.Count()) {
+                currentMode = modeAfterLeavingHouse;
+                return (positionX, positionY);
+            } else {
+                return leavingPath[leavingIndex];
+            }
         }
 
         public abstract (int, int) getScatterTargetPosition(Tile[,] tileArray);
@@ -117,7 +165,7 @@ namespace MAZEGAME
 
         public abstract void updateDirection();
 
-        // Returns the position the nemey should be in when in frightened mode
+        // Returns the position the enemy should be in when in frightened mode
         // The ghost moves in one direction and makes random decisions at every intersection
         public (int, int) getFrightenedPosition(Tile[,] tileArray) {
             List<(int, int)> possibleNextPositions = new List<(int, int)>();
@@ -148,8 +196,10 @@ namespace MAZEGAME
                 return Direction.Left;
             } else if (vector == (0, -1)) {
                 return Direction.Down;
-            } else {
+            } else if (vector == (0, 1)){
                 return Direction.Up;
+            } else {
+                return currentDirection;
             }
         }
     }

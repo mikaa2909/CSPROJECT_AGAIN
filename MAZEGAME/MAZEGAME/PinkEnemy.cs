@@ -5,19 +5,21 @@ namespace MAZEGAME
 {
     public class PinkEnemy : Enemy
     {
+
         public PinkEnemy() : base(){
         }
 
         public override void setInitalState()
         {
-            // positionX = 13;
-            // positionY = 14;
-
-            positionX = 17;
-            positionY = 11;
+            positionX = 13;
+            positionY = 14;
             currentDirection = Direction.Right;
             currentGhost = new Rectangle(1371, 243, 42, 42);
-            currentMode = EnemyMode.Scatter;
+            currentMode = EnemyMode.LeavingHouse;
+            leavingPath = [(13, 14), (13, 13), (13, 12), (13, 11)];
+            leavingIndex = -1;
+            previousModeBeforeFrightened = EnemyMode.Scatter;
+            modeAfterLeavingHouse = EnemyMode.Scatter;
         }
 
         // Set the target position to be a random position in the top right of the maze

@@ -10,15 +10,15 @@ namespace MAZEGAME
 
         public override void setInitalState()
         {
-            // positionX = 12;
-            // positionY = 14;
-
-            positionX = 9;
-            positionY = 11;
-
+            positionX = 12;
+            positionY = 14;
             currentDirection = Direction.Right;
-            currentGhost = new Rectangle(1563, 291, 42, 42);
-            currentMode = EnemyMode.Scatter;
+            currentGhost = new Rectangle(1371, 291, 42, 42);
+            currentMode = EnemyMode.InsideHouse;
+            leavingPath = [(12, 14), (13, 14), (13, 13), (13, 12), (13, 11)];
+            leavingIndex = -1;
+            previousModeBeforeFrightened = EnemyMode.Scatter;
+            modeAfterLeavingHouse = EnemyMode.Scatter;
         }
 
         // Set the target position to be a random position in the bottom right of the maze

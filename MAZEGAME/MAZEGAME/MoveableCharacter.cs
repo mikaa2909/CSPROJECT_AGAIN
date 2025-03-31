@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 namespace MAZEGAME
 {
+    // Class that depecits a moving object in the game (i.e both the players and enemeies)
     public class MoveableCharacter
     {
         // Given a direction and the current position, return what the next position would be
@@ -42,7 +43,7 @@ namespace MAZEGAME
             return new Vector2(toBeX, toBeY);
         }
 
-        // Checks is a tile can be moved onto i.e. it is not a wall or ghost house
+        // Checks if a tile can be moved onto i.e. it is not a wall or ghost house
         public bool isTileMoveable(int x, int y, Tile[,] tileArray) {
             if (x > 27 || x < 0 || y < 0 || y > 30) {
                 return false;

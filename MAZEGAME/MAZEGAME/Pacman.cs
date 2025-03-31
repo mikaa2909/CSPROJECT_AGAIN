@@ -25,7 +25,6 @@ namespace MAZEGAME
             // Loads the different sprites that the player would have 
             // for different directions and with the mouth open to 
             // varying degrees
-
             pacManDowns[0] = new Rectangle(1371, 147, 39, 39);
             pacManDowns[1] = new Rectangle(1419, 147, 39, 39);
             pacManDowns[2] = new Rectangle(1467, 3, 39, 39);
@@ -53,6 +52,14 @@ namespace MAZEGAME
             currentPacMan = new Rectangle(1419, 3, 39, 39);
             // Inital of pacman (mouth wide open) 
             pacManIteration = 0;
+        }
+
+        public void setX(int newX) {
+            positionX = newX;
+        }
+
+        public void setY(int newY) {
+            positionY = newY;
         }
 
         // Returns the x position in the tile array of the player

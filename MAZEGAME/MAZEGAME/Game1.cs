@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Timers;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -19,14 +19,18 @@ public class Game1 : Game
     private int tileWidth;
     private int tileHeight;
     private int noOfPellets;
+    private int pelletsEaten;
     private int score;
     private int countdownNo;
     private bool gameStarted;
     private bool gameOver;
     private bool playerWon;
+    private bool doResetPositions = false;
     private Tile[,] tileArray = new Tile[28, 31];
     private float currentTimer = 0f; 
     private float frightenTimer  = 0f;
+    private float blueReleaseTimer = 0f;
+    private float orangeReleaseTimer = 0f;
     private Enemy.EnemyMode currentEnemyMode;
     private Enemy.EnemyMode previousEnemyMode;
     private int waveNo;
@@ -34,37 +38,38 @@ public class Game1 : Game
     private List<List<float>> waveIntervalsPerLevel = new List<List<float>>();
 
     private int[,] mapDesign = new int[,]{
-            { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1},
-            { 1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1},
-            { 1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1},
-            { 1,3,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,3,1},
-            { 1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1},
-            { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-            { 1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1},
-            { 1,0,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,0,1},
-            { 1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1},
-            { 1,1,1,1,1,1,0,1,1,1,1,1,5,1,1,5,1,1,1,1,1,0,1,1,1,1,1,1},
-            { 1,1,1,1,1,1,0,1,1,1,1,1,5,1,1,5,1,1,1,1,1,0,1,1,1,1,1,1},
-            { 1,1,1,1,1,1,0,1,1,5,5,5,5,5,5,5,5,5,5,1,1,0,1,1,1,1,1,1},
-            { 1,1,1,1,1,1,0,1,1,5,1,1,1,2,2,1,1,1,5,1,1,0,1,1,1,1,1,1},
-            { 1,1,1,1,1,1,0,1,1,5,1,2,2,2,2,2,2,1,5,1,1,0,1,1,1,1,1,1},
-            { 0,0,0,0,0,0,0,5,5,5,1,2,2,2,2,2,2,1,5,5,5,0,0,0,0,0,0,0},
-            { 1,1,1,1,1,1,0,1,1,5,1,2,2,2,2,2,2,1,5,1,1,0,1,1,1,1,1,1},
-            { 1,1,1,1,1,1,0,1,1,5,1,1,1,1,1,1,1,1,5,1,1,0,1,1,1,1,1,1},
-            { 1,1,1,1,1,1,0,1,1,5,5,5,5,5,5,5,5,5,5,1,1,0,1,1,1,1,1,1},
-            { 1,1,1,1,1,1,0,1,1,5,1,1,1,1,1,1,1,1,5,1,1,0,1,1,1,1,1,1},
-            { 1,1,1,1,1,1,0,1,1,5,1,1,1,1,1,1,1,1,5,1,1,0,1,1,1,1,1,1},
-            { 1,0,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1},
-            { 1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1},
-            { 1,0,1,1,1,1,0,1,1,1,1,1,0,1,1,0,1,1,1,1,1,0,1,1,1,1,0,1},
-            { 1,3,0,0,1,1,0,0,0,0,0,0,0,5,5,0,0,0,0,0,0,0,1,1,0,0,3,1},
-            { 1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1},
-            { 1,1,1,0,1,1,0,1,1,0,1,1,1,1,1,1,1,1,0,1,1,0,1,1,0,1,1,1},
-            { 1,0,0,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,1,1,0,0,0,0,0,0,1},
-            { 1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1},
-            { 1,0,1,1,1,1,1,1,1,1,1,1,0,1,1,0,1,1,1,1,1,1,1,1,1,1,0,1},
-            { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1},
-            { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1}
+            { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0},
+            { 0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0},
+            { 0,1,0,0,0,0,1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0},
+            { 0,2,0,0,0,0,1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,2,0},
+            { 0,1,0,0,0,0,1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0},
+            { 0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+            { 0,1,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,1,0},
+            { 0,1,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,1,0},
+            { 0,1,1,1,1,1,1,0,0,1,1,1,1,0,0,1,1,1,1,0,0,1,1,1,1,1,1,0},
+            { 0,0,0,0,0,0,1,0,0,0,0,0,4,0,0,4,0,0,0,0,0,1,0,0,0,0,0,0},
+            { 0,0,0,0,0,0,1,0,0,0,0,0,4,0,0,4,0,0,0,0,0,1,0,0,0,0,0,0},
+            { 0,0,0,0,0,0,1,0,0,4,4,4,4,4,4,4,4,4,4,0,0,1,0,0,0,0,0,0},
+            { 0,0,0,0,0,0,1,0,0,4,0,0,0,3,3,0,0,0,4,0,0,1,0,0,0,0,0,0},
+            { 0,0,0,0,0,0,1,0,0,4,0,3,3,3,3,3,3,0,4,0,0,1,0,0,0,0,0,0},
+            { 1,1,1,1,1,1,1,4,4,4,0,3,3,3,3,3,3,0,4,4,4,1,1,1,1,1,1,1},
+            { 0,0,0,0,0,0,1,0,0,4,0,3,3,3,3,3,3,0,4,0,0,1,0,0,0,0,0,0},
+            { 0,0,0,0,0,0,1,0,0,4,0,0,0,0,0,0,0,0,4,0,0,1,0,0,0,0,0,0},
+            { 0,0,0,0,0,0,1,0,0,4,4,4,4,4,4,4,4,4,4,0,0,1,0,0,0,0,0,0},
+            { 0,0,0,0,0,0,1,0,0,4,0,0,0,0,0,0,0,0,4,0,0,1,0,0,0,0,0,0},
+            { 0,0,0,0,0,0,1,0,0,4,0,0,0,0,0,0,0,0,4,0,0,1,0,0,0,0,0,0},
+            { 0,1,1,1,1,1,1,1,1,1,1,1,1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,0},
+            { 0,1,0,0,0,0,1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0},
+            { 0,1,0,0,0,0,1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,1,0},
+            { 0,2,1,1,0,0,1,1,1,1,1,1,1,4,4,1,1,1,1,1,1,1,0,0,1,1,2,0},
+            { 0,0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1,0,0,1,0,0,0},
+            { 0,0,0,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,1,0,0,1,0,0,1,0,0,0},
+            { 0,1,1,1,1,1,1,0,0,1,1,1,1,0,0,1,1,1,1,0,0,1,1,1,1,1,1,0},
+            { 0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0},
+            { 0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0},
+            { 0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,0},
+            { 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0}
+
         };
 
     public Game1()
@@ -102,7 +107,6 @@ public class Game1 : Game
         waveIntervalsPerLevel.Add([7f, 20f, 7f, 20f, 7f, 20f, 7f]); // level 1
         waveIntervalsPerLevel.Add([7f, 20f, 7f, 20f, 3f, 22f, 3f]); // level 2
         waveIntervalsPerLevel.Add([7f, 20f, 3f, 22f, 2f, 23f, 1f]); // level 3
-        
         base.Initialize();
     }
 
@@ -134,60 +138,21 @@ public class Game1 : Game
         // Where the main logic of the game happens once it is underway 
         if (gameStarted && !gameOver) {
 
-            // Logic to change the mode of the enemies after certain intervals determined by the intervals in waveIntervalsPerLevel 
-            // (only changes when a enemy is not in frightened mode and the wave number is below 7 which is the highest)
-            if (currentEnemyMode != Enemy.EnemyMode.Frightened && waveNo < 7) {
-                currentTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
-                
-                // If the interval has passed then the enemies all have their modes changed 
-                // The interval is dependant on the current wave that is happening and the waves are dependant on the current level 
-                if (currentTimer >= waveIntervalsPerLevel[currentLevel-1][waveNo]) {
-                    currentTimer = 0;
-                    foreach (Enemy enemy in enemies) {
-                        currentEnemyMode = enemy.changeMode();
-                    }
-                }
-            } else if (currentEnemyMode == Enemy.EnemyMode.Frightened) {
-                // If the enemies are in frightened mode, the frightened timer is increased
-                frightenTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
-                if (frightenTimer > 6f && frightenTimer < 8f) { 
-                    // When 6 seconds is over, the enemies should turn from blue to white
-                    foreach (Enemy enemy in enemies) {
-                        enemy.setWhiteGhost();
-                    }
-                } else if (frightenTimer > 8f) { 
-                    // When 8 seconds are over, enemies should return to the previous mode and timer reset
-                    currentEnemyMode = previousEnemyMode;
-                    foreach (Enemy enemy in enemies) {
-                        enemy.endFrightenedMode();
-                    }
-                    frightenTimer = 0f;
-                }
+            // If the game is in a state to reset, reset all the positions to the original settings
+            if (doResetPositions) {
+                resetPositions();
             }
+
+            changeMode(gameTime);
 
             // Register the press of a key, to indicate the next direction the player wants to take
             KeyboardState kState = Keyboard.GetState();
             pacman.changeDirection(kState);
 
-            Tile currentPacmanTile = tileArray[pacman.getX(), pacman.getY()];
-            if (currentPacmanTile.tileType == Tile.TileType.Pellet) {
-                // If the player is on a tile with a pellet, remove it from the tile and increase the score
-                tileArray[pacman.getX(), pacman.getY()] = new Tile(new Vector2(currentPacmanTile.position.X, currentPacmanTile.position.Y), Tile.TileType.None);
-                noOfPellets --;
-                score += 10;
-            } else if (currentPacmanTile.tileType == Tile.TileType.PowerPellet) {
-                // If the player is on a tile with a power pellet, remove it from the tile, increase the score
-                // and all enemies should enter frightened mode, the frighten timer now begins/resets
-                tileArray[pacman.getX(), pacman.getY()] = new Tile(new Vector2(currentPacmanTile.position.X, currentPacmanTile.position.Y), Tile.TileType.None);
-                noOfPellets --;
-                score += 10;
-                foreach (Enemy enemy in enemies) {
-                    enemy.frighten();
-                }
-                frightenTimer = 0f;
-                currentEnemyMode = Enemy.EnemyMode.Frightened;
-            }
-
+            eatPellets();
+            checkToReleaseBlue(gameTime);
+            checkToReleaseOrange(gameTime);
+            
             // If all pellets are consumed, the next level begins and the map is reset
             // If the third level is complete, the game is over and the player has won
             if (noOfPellets == 0) {
@@ -203,44 +168,23 @@ public class Game1 : Game
                 return;
             }
 
-            // Check if the enemy and the player have collided by checking if they are on the same tile
-            foreach (Enemy enemy in enemies) {
-                Tile currentEnemyTile = tileArray[enemy.getX(), enemy.getY()];
-                if (currentPacmanTile.Equals(currentEnemyTile)) {
-                    if (enemy.getMode() == Enemy.EnemyMode.Frightened) { 
-                        // If the player does collide with the enemy when the enemies are in frightened mode, 
-                        // the enemy is sent to its inital positions and the score increases by 200
-                        score += 200;
-                        enemy.setInitalState();
-                    } else {
-                        // If the player collides with the enemy in normal modes, the player loses a life
-                        // and the position of the player and enemies are reset.
-                        // If all lives are lost, the game is over
-                        pacman.decreaseLife();
-                        if (pacman.getLivesLeft() == 0) {
-                            gameOver = true;
-                            return;
-                        }
-                        resetPositions();
-                    }
-                }  
-            }
+            checkIfEnemyPlayerCollision();
              
             // Don't update pacman every update but every couple of updates (makes the animation slower)
-            if (timeElapsed == 8) 
+            if (timeElapsed == 10) 
             {
-                // Update the player and enemies
-                pacman.updatePlayer(tileArray);
-                foreach (Enemy enemy in enemies) {
-                    enemy.updateEnemy(tileArray, (pacman.getX(), pacman.getY()), pacman.getCurrentDirection(), (enemies[1].getX(), enemies[1].getY()));
+                if (!doResetPositions) {
+                    // Move the players and enemies
+                    pacman.updatePlayer(tileArray);
+                    foreach (Enemy enemy in enemies) {
+                        enemy.updateEnemy(tileArray, (pacman.getX(), pacman.getY()), pacman.getCurrentDirection(), (enemies[1].getX(), enemies[1].getY()));
+                    }
+                    timeElapsed = 0;
                 }
-                timeElapsed = 0;
             }
 
             timeElapsed += 1;
         }
-
-
         base.Update(gameTime);
     }
 
@@ -282,6 +226,168 @@ public class Game1 : Game
 
     }
 
+    // If the player is on a tile with a pellet, the player eats the pellet
+    private void eatPellets() {
+        Tile currentPacmanTile = tileArray[pacman.getX(), pacman.getY()];
+        if (currentPacmanTile.tileType == Tile.TileType.Pellet) {
+            // If the player is on a tile with a pellet, remove it from the tile and increase the score
+            tileArray[pacman.getX(), pacman.getY()] = new Tile(new Vector2(currentPacmanTile.position.X, currentPacmanTile.position.Y), Tile.TileType.None);
+            noOfPellets --;
+            pelletsEaten++;
+            score += 10;
+        } else if (currentPacmanTile.tileType == Tile.TileType.PowerPellet) {
+            // If the player is on a tile with a power pellet, remove it from the tile, increase the score
+            // and all enemies should enter frightened mode, the frighten timer now begins/resets
+            tileArray[pacman.getX(), pacman.getY()] = new Tile(new Vector2(currentPacmanTile.position.X, currentPacmanTile.position.Y), Tile.TileType.None);
+            noOfPellets --;
+            pelletsEaten++;
+            score += 10;
+            foreach (Enemy enemy in enemies) {
+                enemy.frighten();
+            }
+            frightenTimer = 0f;
+            currentEnemyMode = Enemy.EnemyMode.Frightened;
+        }
+    }
+
+    private void checkIfEnemyPlayerCollision() {
+        // Check if the enemy and the player have collided
+        foreach (Enemy enemy in enemies) {
+            if (checkIfCollision(enemy)) {
+                if (enemy.getMode() == Enemy.EnemyMode.Frightened) { 
+                    // If the player does collide with the enemy when the enemies are in frightened mode, 
+                    // the enemy is sent to its inital positions and the score increases by 200
+                    score += 200;
+                    enemy.setInitalState();
+                } else {
+                    // If the player collides with the enemy in normal modes, the player loses a life
+                    // and the position of the player and enemies are reset.
+                    // If all lives are lost, the game is over
+                    pacman.decreaseLife();
+                    if (pacman.getLivesLeft() == 0) {
+                        gameOver = true;
+                        return;
+                    }
+                    doResetPositions = true;
+                    break;
+                }
+            }  
+        }
+    }
+
+    // Changes mode if the associated timer is up
+    private void changeMode(GameTime gameTime) {
+        // Logic to change the mode of the enemies after certain intervals determined by the intervals in waveIntervalsPerLevel 
+        // (only changes when a enemy is not in frightened mode and the wave number is below 7 which is the highest)
+        if (currentEnemyMode != Enemy.EnemyMode.Frightened && waveNo < 7) {
+            currentTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+            
+            // If the interval has passed then the enemies all have their modes changed 
+            // The interval is dependant on the current wave that is happening and the waves are dependant on the current level 
+            if (currentTimer >= waveIntervalsPerLevel[currentLevel-1][waveNo]) {
+                currentTimer = 0;
+                
+                //Switch between chasing and scattering
+                Enemy.EnemyMode changeTo = currentEnemyMode == Enemy.EnemyMode.Scatter ? Enemy.EnemyMode.Chase : Enemy.EnemyMode.Scatter;
+                foreach (Enemy enemy in enemies) {
+                    enemy.changeMode(changeTo);
+                }
+                currentEnemyMode = changeTo;
+            }
+        } else if (currentEnemyMode == Enemy.EnemyMode.Frightened) {
+            // If the enemies are in frightened mode, the frightened timer is increased
+            frightenTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (frightenTimer > 6f && frightenTimer < 8f) { 
+                // When 6 seconds is over, the enemies should turn from blue to white to indicate the frightened time is coming
+                // to an end
+                foreach (Enemy enemy in enemies) {
+                    enemy.setWhiteGhost();
+                }
+            } else if (frightenTimer > 8f) { 
+                // When 8 seconds are over, enemies should return to the previous mode and timer reset
+                currentEnemyMode = previousEnemyMode;
+                foreach (Enemy enemy in enemies) {
+                    enemy.endFrightenedMode();
+                }
+                frightenTimer = 0f;
+            }
+        }
+    }
+
+    // Checks if the player and enemy has collided. It does this by using the concept of 
+    // axis aligned bounding boxes.
+    private bool checkIfCollision(Enemy enemy) {
+        int rows = tileArray.GetLength(0);
+        int cols = tileArray.GetLength(1);
+
+        // Get all the direction around an object
+        (int, int)[] directions = [(-1, 0), (0, -1), (0, 0), (0, 1), (1, 0)];
+        List<(int, int)> enemyPositions = new List<(int, int)>();
+        List<(int, int)> playerPositions = new List<(int, int)>();
+
+        int enemyPositionX = enemy.getX();
+        int enemyPositionY = enemy.getY(); 
+        int playerPositionX = pacman.getX();
+        int playerPositionY = pacman.getY();
+
+        // Get all the possible positions in the different directions around both objexts (the bounding boxes)
+        foreach ((int, int) offset in directions) {
+            int enemyX = enemyPositionX + offset.Item1;
+            int enemyY = enemyPositionY + offset.Item2;
+
+             // If the posiition is valid then add it to the possible options list
+            if (enemyX >= 0 && enemyX < rows && enemyY >= 0 && enemyY < cols && enemy.isTileMoveable(enemyX, enemyY, tileArray)) {
+                enemyPositions.Add((enemyX, enemyY));
+            }
+            
+            int playerX = playerPositionX + offset.Item1;
+            int playerY = playerPositionY + offset.Item2;
+
+            if (playerX >= 0 && playerX < rows && playerY >= 0 && playerY < cols && pacman.isTileMoveable(playerX, playerY, tileArray)) {
+                playerPositions.Add((playerX, playerY));
+            }
+        }
+
+        // If any of the positions around are the same then the objects have collided
+        return enemyPositions.Intersect(playerPositions).Any();
+    }
+
+    // Method to check whether to release the blue ghost, if so then release it
+    private void checkToReleaseBlue(GameTime gameTime) {
+        blueReleaseTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+        if (enemies[3].getMode() == Enemy.EnemyMode.InsideHouse) {
+
+            // On the first level, if more than 30 pellets are eaten then release
+            if (pelletsEaten == 30) {
+                enemies[3].leaveHouse(currentEnemyMode);
+            } else if (pelletsEaten > 30) {
+                // If the blue ghost has already been released before but has returned to the house
+                // then release after 15 seconds after it returned home.
+                if (blueReleaseTimer > 15f) {
+                   enemies[3].leaveHouse(currentEnemyMode); 
+                }
+            }
+        }
+    }
+
+    // Method to check whether to release the orange ghost, if so then release it
+    private void checkToReleaseOrange(GameTime gameTime) {
+        orangeReleaseTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
+        // On the first level, if more than 85 pellets are eaten then release
+        if (enemies[0].getMode() == Enemy.EnemyMode.InsideHouse) {
+            if (pelletsEaten == 85) {
+                enemies[0].leaveHouse(currentEnemyMode);
+            } else if (pelletsEaten > 85) {
+                // If the orange ghost has already been released before but has returned to the house
+                // then release after 25 seconds after it returned home.
+                if (orangeReleaseTimer > 25f) {
+                   enemies[0].leaveHouse(currentEnemyMode); 
+                }
+            }
+        }
+    }
+
     private void SetUpTileArray() 
     {
         // Create the tile array based on the design of the map, where different integers represent 
@@ -290,23 +396,23 @@ public class Game1 : Game
         {
             for (int x = 0; x < 28; x++)
             {
-                if (mapDesign[y, x] == 0) // pellet
-                {
-                    tileArray[x, y] = new Tile(new Vector2(x * 24, y * 24 + 27), Tile.TileType.Pellet);
-                }
-                else if (mapDesign[y, x] == 1) // wall
+                if (mapDesign[y, x] == 0) // wall
                 {
                     tileArray[x, y] = new Tile(new Vector2(x * 24, y * 24 + 27), Tile.TileType.Wall);
                 }
-                else if (mapDesign[y, x] == 2) //  enemy base
+                else if (mapDesign[y, x] == 1) // pellet
                 {
-                    tileArray[x, y] = new Tile(new Vector2(x * 24, y * 24 + 27), Tile.TileType.GhostHouse);
+                    tileArray[x, y] = new Tile(new Vector2(x * 24, y * 24 + 27), Tile.TileType.Pellet);
                 }
-                else if (mapDesign[y, x] == 3) // power pellet
+                else if (mapDesign[y, x] == 2) // power pellet
                 {
                     tileArray[x, y] = new Tile(new Vector2(x * 24, y * 24 + 27), Tile.TileType.PowerPellet);
                 }
-                else if (mapDesign[y, x] == 5) // empty
+                else if (mapDesign[y, x] == 3) // enemy house 
+                {
+                    tileArray[x, y] = new Tile(new Vector2(x * 24, y * 24 + 27), Tile.TileType.GhostHouse);
+                }
+                else if (mapDesign[y, x] == 4) // empty
                 {
                     tileArray[x, y] = new Tile(new Vector2(x * 24, y * 24 + 27), Tile.TileType.None);
                 }
@@ -387,10 +493,15 @@ public class Game1 : Game
         gameStarted = false;
         countdownNo = 3;
         currentTimer = 0;
+        blueReleaseTimer = 0f;
+        orangeReleaseTimer = 0f;
         pacman.setInitalState();
         foreach (Enemy enemy in enemies) {
             enemy.setInitalState();
         }
+        doResetPositions = false;
+
+        // Pause before starting again
         System.Threading.Thread.Sleep(2000);
     }
 }

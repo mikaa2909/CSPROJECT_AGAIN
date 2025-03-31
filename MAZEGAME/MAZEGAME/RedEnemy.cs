@@ -6,6 +6,7 @@ namespace MAZEGAME
     public class RedEnemy : Enemy
     {
         public RedEnemy() : base(){
+            
         }
 
         public override void setInitalState()
@@ -15,6 +16,9 @@ namespace MAZEGAME
             currentDirection = Direction.Right;
             currentGhost = new Rectangle(1371, 195, 42, 42);
             currentMode = EnemyMode.Scatter;
+            leavingIndex = -1;
+            previousModeBeforeFrightened = EnemyMode.Scatter;
+            modeAfterLeavingHouse = EnemyMode.Scatter;
         }
 
         // Set the target position to be a random position in the top left of the maze
